@@ -1,13 +1,13 @@
 class Collision
 {
 private:
-	static const int WIDTH		= 640;
-	static const int HEIGHT		= 480;
-	static const int AREA		= WIDTH * HEIGHT;
-	static const int BAW		= 1;
-	static const int RGB		= 3;
-	static const bool C2D		= true;
-	static const bool D2C		= false;
+	static const int WIDTH = 640;
+	static const int HEIGHT = 480;
+	static const int AREA = WIDTH * HEIGHT;
+	static const int BAW = 1;
+	static const int RGB = 3;
+	static const bool C2D = true;
+	static const bool D2C = false;
 
 	CLNUICamera kinect;
 	bool success;
@@ -20,8 +20,8 @@ private:
 	int point;
 	CvFont myFont;
 
-	int minVal;
-	int maxVal;
+	int minDepth;
+	int maxDepth;
 	int target;
 	CvPoint depth_tl;
 	CvPoint depth_br;
@@ -32,13 +32,13 @@ private:
 	unsigned char rgbDepthData[AREA * 3];
 
 	static void on_mouse(int click_event, int xx, int yy, int flags, void *param);
-	static void num2spectrum(short *nums, unsigned char *rgbs, int numlen, int min, int max);
-	static void num2rgb(short *nums, unsigned char *rgbs, int numlen, int min, int max);
+	static void depthToRGBSpectrum(short *depthValues, unsigned char *rgbs, int numlen, int min, int max);
+	static void depthToRGBThresh(short *depthValues, unsigned char *rgbs, int numlen, int min, int max);
 
 public:
-	static const int NONE		= -1;
+	static const int NONE = -1;
 	static const int SPECTRUM	= 0;
-	static const int DISTINCT	= 1;
+	static const int THRESHOLD	= 1;
 
 	IplImage *depthFrame;
 	IplImage *colorFrame;
@@ -46,7 +46,7 @@ public:
 	Collision()
 	{
 		// Initialize the Kinect for polling
-		this->kinect	= CreateNUICamera(GetNUIDeviceSerial(0));
+		this->kinect = CreateNUICamera(GetNUIDeviceSerial(0));
 		this->success	= StartNUICamera(this->kinect);
 
 		// Initialize the containers for the depth and color frames
@@ -71,10 +71,11 @@ public:
 		cvGetAffineTransform(dst, src, d2c_map);
 
 		// Delay to guarantee the Kinect is ready for polling
-		this->time_Start	= time(0);
-		this->time_End		= time(0);
+		this->time_Start = time(0);
+		this->time_End = time(0);
 		while (difftime(this->time_End, this->time_Start) < 2.0) this->time_End = time(0);
 	}
+
 	~Collision()
 	{
 		cvReleaseImage(&this->depthFrame);
@@ -88,7 +89,7 @@ public:
 	void translate_XY(int src_xx, int src_yy, int *dst_xx, int *dst_yy, bool select);
 	void pollDepthFrame(int select);
 	void pollColorFrame();
-	
+
 	bool initialize();
 	bool detect(int range, float *xx, float *yy, int *color);
 };

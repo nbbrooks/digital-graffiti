@@ -1,32 +1,8 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // Kinect Collision Detection                                                                       //
 // Writen by Andrew Sarratori                                                                       //
-//                                                                                                  //
-// OVERVIEW:                                                                                        //
-//                                                                                                  //
-// -- on_mouse():
-//                                                                                                  //
-// -- num2rgb():
-//                                                                                                  //
-// -- initialize():
-//                                                                                                  //
-// ALGORITHM FLOW:                                                                                  //
-//                                                                                                  //
-// -- on_mouse():
-//                                                                                                  //
-// -- num2rgb():
-//                                                                                                  //
-// -- initialize():
-//                                                                                                  //
-// PARAMETERS:                                                                                      //
-//                                                                                                  //
-// -- on_mouse():
-//                                                                                                  //
-// -- num2rgb():
-//                                                                                                  //
-// -- initialize():
-//                                                                                                  // 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 #include "stdafx.h"
 #include <fstream>
@@ -40,7 +16,7 @@ void Collision::on_mouse(int click_event, int xx, int yy, int flags, void *param
 	}
 }
 
-void Collision::num2spectrum(short *nums, unsigned char *rgbs, int numlen, int min, int max)
+void Collision::depthToRGBSpectrum(short *depthValues, unsigned char *rgbs, int numlen, int depthMin, int depthMax)
 {
 #pragma omp parallel for
 	for(int ii = 0; ii < numlen; ii++)
@@ -51,12 +27,12 @@ void Collision::num2spectrum(short *nums, unsigned char *rgbs, int numlen, int m
 		float blue			= 0.0f;
 		float factor		= 0.0f;
 		float gamma			= 1.0f;
+		// Add in a tolerance region
+		depthMin -= 5;
+		depthMax -= 5;
 
-		int adj_min = min - 5;
-		int adj_max = max + 5;
-
-		if(nums[ii] < adj_min)			wavelength = 0.0f;
-		else if(nums[ii] <= adj_max)	wavelength = ((float)nums[ii] - (float)adj_min) / ((float)adj_max - (float)adj_min) * (750.0f - 350.0f) + 350.0f;
+		if(depthValues[ii] < depthMin)			wavelength = 0.0f;
+		else if(depthValues[ii] <= depthMax)	wavelength = ((float)depthValues[ii] - (float)depthMin) / ((float)depthMax - (float)depthMin) * (750.0f - 350.0f) + 350.0f;
 		else							wavelength = 0.0f;
 
 		if(wavelength == 0.0f)
@@ -107,24 +83,24 @@ void Collision::num2spectrum(short *nums, unsigned char *rgbs, int numlen, int m
 		else if(wavelength < 680)	factor = 1.0f;
 		else						factor = 0.3f + 0.7f * (750.0f - wavelength) / (750.0f - 680.0f);
 
-		rgbs[3 * ii]		= (unsigned char)floor(255.0f * pow(blue * factor, gamma));
-		rgbs[3 * ii + 1]	= (unsigned char)floor(255.0f * pow(green * factor, gamma));
-		rgbs[3 * ii + 2]	= (unsigned char)floor(255.0f * pow(red * factor, gamma));
+		rgbs[3 * ii] = (unsigned char)floor(255.0f * pow(blue * factor, gamma));
+		rgbs[3 * ii + 1] = (unsigned char)floor(255.0f * pow(green * factor, gamma));
+		rgbs[3 * ii + 2] = (unsigned char)floor(255.0f * pow(red * factor, gamma));
 	}
 }
 
-void Collision::num2rgb(short *nums, unsigned char *rgbs, int numlen, int min, int max)
+void Collision::depthToRGBThresh(short *depthValues, unsigned char *rgbs, int numlen, int minDepth, int maxDepth)
 {
 #pragma omp parallel for
 	for(int ii = 0; ii < numlen; ii++)
 	{
-		if(nums[ii] >= max - 4)
+		if(depthValues[ii] >= maxDepth - 4)
 		{
 			rgbs[3 * ii]		= 0;
 			rgbs[3 * ii + 1]	= 0;
 			rgbs[3 * ii + 2]	= 255;
 		}
-		else if(nums[ii] <= min + 4)
+		else if(depthValues[ii] <= minDepth + 4)
 		{
 			rgbs[3 * ii]		= 255;
 			rgbs[3 * ii + 1]	= 0;
@@ -163,8 +139,8 @@ void Collision::pollDepthFrame(int select)
 {
 	GetNUICameraDepthFrameRAW(this->kinect, (PUSHORT)this->rawDepthData);
 
-	if(select == 0) num2spectrum(this->rawDepthData, this->rgbDepthData, AREA, this->minVal, this->maxVal);
-	else if(select == 1) num2rgb(this->rawDepthData, this->rgbDepthData, AREA, this->minVal, this->maxVal);
+	if(select == SPECTRUM) depthToRGBSpectrum(this->rawDepthData, this->rgbDepthData, AREA, this->minDepth, this->maxDepth);
+	else if(select == THRESHOLD) depthToRGBThresh(this->rawDepthData, this->rgbDepthData, AREA, this->minDepth, this->maxDepth);
 
 	cvSetData(this->depthFrame, this->rgbDepthData, this->depthFrame->widthStep);
 	//cvRectangle(this->depthFrame, this->depth_tl, this->depth_br, cvScalar(255, 255, 255));
@@ -181,8 +157,8 @@ bool Collision::initialize()
 {
 	bool SKIP = true;
 
-	this->minVal	= 2047;
-	this->maxVal	= 0;
+	this->minDepth	= 2047;
+	this->maxDepth	= 0;
 	this->state		= 0;
 	this->point		= -1;
 
@@ -196,16 +172,16 @@ bool Collision::initialize()
 
 		for(int ii = 1; ii < AREA; ii++)
 		{
-			if(this->rawDepthData[ii] > this->maxVal && this->rawDepthData[ii] < 2047) this->maxVal = this->rawDepthData[ii];
+			if(this->rawDepthData[ii] > this->maxDepth && this->rawDepthData[ii] < 2047) this->maxDepth = this->rawDepthData[ii];
 		}
-		if(this->minVal > this->maxVal - 10) this->minVal = this->maxVal / 2; 
+		if(this->minDepth > this->maxDepth - 10) this->minDepth = this->maxDepth / 2; 
 
 		while(state < 3)
 		{
 			if(point != -1)
 			{
-				if(this->state == 0)		this->maxVal = this->rawDepthData[point];
-				else if(this->state == 1)	this->minVal = this->rawDepthData[point];
+				if(this->state == 0) this->maxDepth = this->rawDepthData[point];
+				else if(this->state == 1)	this->minDepth = this->rawDepthData[point];
 				else if(this->state == 2)	this->target = this->rawDepthData[point];
 
 				this->state++;
@@ -235,7 +211,6 @@ bool Collision::initialize()
 					this->color_br.x = this->point % this->WIDTH;
 					this->color_br.y = this->point / this->WIDTH;
 				}
-
 				this->state++;
 				this->point = -1;
 			}
@@ -248,23 +223,23 @@ bool Collision::initialize()
 			cvWaitKey(1);
 		}
 	} else {
-		this->maxVal = 930;
-		this->minVal = 909;
+		this->maxDepth = 930;
+		this->minDepth = 909;
 		this->target = 922;
 		this->color_tl.x = 80;
 		this->color_tl.y = 69;
 		this->color_br.x = 562;
 		this->color_br.y = 385;
 	}
-	cout << "Background: " << this->maxVal << endl;
-	cout << "Foreground: " << this->minVal << endl;
+	cout << "Background: " << this->maxDepth << endl;
+	cout << "Foreground: " << this->minDepth << endl;
 	cout << "Target: " << this->target << endl;
 	cout << "Bounding Box: " << this->color_tl.x << ", " << this->color_tl.y << " | " << this->color_br.x << ", " << this->color_br.y << endl;
 
 	ofstream myfile;
 	myfile.open ("config.txt");
-	myfile << "Background: " << this->maxVal << endl;
-	myfile << "Foreground: " << this->minVal << endl;
+	myfile << "Background: " << this->maxDepth << endl;
+	myfile << "Foreground: " << this->minDepth << endl;
 	myfile << "Target: " << this->target << endl;
 	myfile << "Bounding Box: " << this->color_tl.x << ", " << this->color_tl.y << " | " << this->color_br.x << ", " << this->color_br.y << endl;
 	myfile.close();
@@ -286,13 +261,12 @@ bool Collision::detect(int range, float *xx, float *yy, int *color)
 	int jj = 0;
 	int pt_xx = 0;
 	int pt_yy = 0;
-
 	for(ii = this->depth_tl.x; ii < this->depth_br.x; ii++)
+	{
 		for(jj = this->depth_tl.y; jj < this->depth_br.y; jj++)
 		{
-			int lower = this->minVal + 4;
-			int upper = this->maxVal - 4;
-
+			int lower = this->minDepth + 4;
+			int upper = this->maxDepth - 4;
 			if(rawDepthData[jj * this->WIDTH + ii] > lower && rawDepthData[jj * this->WIDTH + ii] < upper)
 			{
 				pt_xx = 0;
@@ -311,36 +285,36 @@ bool Collision::detect(int range, float *xx, float *yy, int *color)
 				break;
 			}
 		}
+	}
 
-		if(result == true)
-		{
-			for(ii = pt_xx - 10; ii < pt_xx + 10; ii++)
-				for(jj = pt_yy - 10; jj < pt_yy + 10; jj++)
+	if(result == true)
+	{
+		for(ii = pt_xx - 10; ii < pt_xx + 10; ii++)
+			for(jj = pt_yy - 10; jj < pt_yy + 10; jj++)
+			{
+				int pixel_b = this->rawColorData[3 * (jj * this->WIDTH + ii)];
+				int pixel_g = this->rawColorData[3 * (jj * this->WIDTH + ii) + 1];
+				int pixel_r = this->rawColorData[3 * (jj * this->WIDTH + ii) + 2];
+
+				if(pixel_b > 120 && pixel_g < 80 && pixel_r < 80)
 				{
-					int pixel_b = this->rawColorData[3 * (jj * this->WIDTH + ii)];
-					int pixel_g = this->rawColorData[3 * (jj * this->WIDTH + ii) + 1];
-					int pixel_r = this->rawColorData[3 * (jj * this->WIDTH + ii) + 2];
-
-					if(pixel_b > 120 && pixel_g < 80 && pixel_r < 80)
-					{
-						*color = 2;
-						ii = pt_xx + 10;
-						break;
-					}
-					else if(pixel_b < 80 && pixel_g > 120 && pixel_r > 120)
-					{
-						*color = 1;
-						ii = pt_xx + 10;
-						break;
-					}
-					else if(pixel_b < 80 && pixel_g < 80 && pixel_r > 120)
-					{
-						*color = 0;
-						ii = pt_xx + 10;
-						break;
-					}
+					*color = 2;
+					ii = pt_xx + 10;
+					break;
 				}
-		}
-
-		return result;
+				else if(pixel_b < 80 && pixel_g > 120 && pixel_r > 120)
+				{
+					*color = 1;
+					ii = pt_xx + 10;
+					break;
+				}
+				else if(pixel_b < 80 && pixel_g < 80 && pixel_r > 120)
+				{
+					*color = 0;
+					ii = pt_xx + 10;
+					break;
+				}
+			}
+	}
+	return result;
 }

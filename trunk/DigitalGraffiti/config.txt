@@ -1,4 +1,0 @@
-Background: 930
-Foreground: 909
-Target: 922
-Bounding Box: 80, 69 | 562, 385

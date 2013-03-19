@@ -5,21 +5,25 @@
 
 #pragma once
 
-#include "targetver.h"
-
+#include <ctime>
+#include <iostream>
+#include <fstream>
 #include <stdio.h>
 #include <tchar.h>
-#include <iostream>
-#include <ctime>
 //#include <omp.h>
+#include <vector>
+#include <XnCppWrapper.h>
+#include <XnOS.h>
+#include <stdarg.h>
 
 #include "cv.h"
-#include "highgui.h"
-#include "cxcore.h"
 #include "cvaux.h"
-#include "CLNUIDevice.h"
-#include "Collision.h"
-
-
+#include "cxcore.h"
+#include "DigitalGraffiti.h"
+#include "highgui.h"
+#include "Kinect.h"
+#include "Sound.h"
+#include "targetver.h"
+#include "Wall.h"
 
 // TODO: reference additional headers your program requires here

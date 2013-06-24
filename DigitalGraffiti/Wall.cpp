@@ -2,7 +2,7 @@
 #include "stdafx.h"
 #include <iostream>
 #include <ctime>
-#include <FTGL/ftgl.h>
+//#include <FTGL/ftgl.h>
 #include <math.h>
 #include <stdio.h>
 #include <time.h>
@@ -612,8 +612,7 @@ void Wall::render(void)
 		glClear(GL_COLOR_BUFFER_BIT);	
 		// Render bitmap message
 		glColor3f(0.0, 0.0, 0.0);
-		//printStringStroke("How fast can you pick up the balls?", TEXT_CENTER, 0.3, 0.0005);
-		testStroke(TEXT_CENTER, 0.3, 0.0005);
+		printStringStroke("How fast can you pick up the balls?", TEXT_CENTER, 0.3, 0.0005);
 		glutSwapBuffers();
 		break;
 	case(DigitalGraffiti::MODE_CLEANUP_URL):	
@@ -710,57 +709,6 @@ void Wall::printStringStroke(string text, int xFormat, float y, float scale)
 	glPopMatrix();
 }
 
-void Wall::testStroke(int xFormat, float y, float scale) 
-{
-	// Create a pixmap font from a TrueType file.
-FTGLPixmapFont font("/home/user/Arial.ttf");
-
-// If something went wrong, bail out.
-if(font.Error())
-    return -1;
-
-// Set the font size and render a small text.
-font.FaceSize(72);
-font.Render("Hello World!");
-
-	/*
-	glPushMatrix();
-	float textPixels = (float) text.length() * 104.76 * 450 * scale;
-	float width = (float) wallWidth;
-	switch(xFormat)
-	{
-	case(TEXT_LEFT):
-		glTranslatef(-1.0, y, 0.0);
-		break;
-	case(TEXT_CENTER):
-		glTranslatef(-textPixels / width / 2, y, 0.0);
-		break;
-	case(TEXT_RIGHT):
-		glTranslatef((wallWidth - textPixels) / wallWidth - 0.5, y, 0.0);
-		break;
-	default:
-		break;
-	}
-	glScalef(scale, scale, scale);
-
-	// Antialias on
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_BLEND);
-	glEnable(GL_LINE_SMOOTH);
-	glLineWidth(2.0);   // 2.0 gives good results.
-
-	for (string::iterator i = text.begin(); i != text.end(); ++i) 
-	{
-		char c = *i;
-		glutStrokeCharacter(GLUT_STROKE_ROMAN, c);
-	}
-
-	// Antialias off
-	glDisable(GL_BLEND);
-	glDisable(GL_LINE_SMOOTH);
-	glPopMatrix();
-	*/
-}
 
 /*
 * Initialize wall image to white, paint volume to 0, and random seed to 0
@@ -832,6 +780,8 @@ void Wall::setup(int argc, char **argv)
 	{
 		glutFullScreen();
 	}
+	// Hide mouse pointer
+	glutSetCursor(GLUT_CURSOR_NONE);
 	// Register callbacks
 	glutDisplayFunc(&render);
 	if(DigitalGraffiti::USE_GRAVITY)

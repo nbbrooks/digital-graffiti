@@ -14,8 +14,9 @@ Sound::Sound(void)
 	numSplat = splatSoundList.size();
 	if(DigitalGraffiti::DEBUG)
 	{
-		printf("numCleanup = %u\n", numCleanup);
-		printf("numSplat = %u\n", numSplat);
+		printf("Sound directory is: %s\n", exeDir.c_str());
+		printf("\tnumCleanup = %u\n", numCleanup);
+		printf("\tnumSplat = %u\n", numSplat);
 	}
 }
 
@@ -27,7 +28,7 @@ void Sound::playCleanupMusic(void)
 		{
 			printf("Play %s\n", cleanupMusicList[cleanupCounter].c_str());
 		}
-		PlaySound(cleanupMusicList[cleanupCounter].c_str(), NULL, SND_FILENAME | SND_ASYNC| SND_NOWAIT);
+		PlaySound(TEXT(cleanupMusicList[cleanupCounter].c_str()), NULL, SND_FILENAME | SND_ASYNC| SND_NOWAIT);
 		cleanupCounter = (cleanupCounter + 1) % numCleanup;
 	}
 }
@@ -40,7 +41,7 @@ void Sound::playSplatSound(void)
 		{
 			printf("Play %s\n", splatSoundList[splatCounter].c_str());
 		}
-		PlaySound(splatSoundList[splatCounter].c_str(), NULL, SND_FILENAME | SND_ASYNC| SND_NOWAIT);
+		PlaySound(TEXT(splatSoundList[splatCounter].c_str()), NULL, SND_FILENAME | SND_ASYNC| SND_NOWAIT);
 		splatCounter = (splatCounter + 1) % numSplat;
 	}
 }

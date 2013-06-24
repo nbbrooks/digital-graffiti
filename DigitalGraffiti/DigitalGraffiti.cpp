@@ -33,7 +33,10 @@ time_t endT			= 0;
 
 #pragma comment(lib, "winmm.lib")
 
-// a simple class declaration part
+const std::string DigitalGraffiti::DEBUG_SETTINGS_FILE = "graffiti-settings.txt";
+bool DigitalGraffiti::useKinect = true;
+bool DigitalGraffiti::useWall = true;
+int DigitalGraffiti::paintTime, DigitalGraffiti::cleanupStartTime, DigitalGraffiti::cleanupUrlTime;
 
 /**
 * Structure for passing a thread an object pointer and function pointer
@@ -52,15 +55,61 @@ int main(int argc, char** argv)
 
 DigitalGraffiti::DigitalGraffiti(int argc, char** argv) 
 {
-	vector<int> hits;
-	vector<int> feedbackOld;
-	vector<int> feedbackNew;
+	std::vector<int> hits, feedbackOld, feedbackNew;
+	std::ifstream settings;
+	std::string line;
+	settings.open(DEBUG_SETTINGS_FILE);
+	if(settings.is_open())
+	{
+		if(settings.good())
+		{
+			getline(settings, line);
+			if(line.compare("false") == 0)
+			{
+				useKinect = false;
+			}
+		}
+		if(settings.good())
+		{
+			getline(settings, line);
+			if(line.compare("false") == 0)
+			{
+				useWall = false;
+			}
+		}
+		if(settings.good())
+		{
+			getline(settings, line);
+			paintTime = atoi(line.c_str());
+		}
+		if(settings.good())
+		{
+			getline(settings, line);
+			cleanupStartTime = atoi(line.c_str());
+		}
+		if(settings.good())
+		{
+			getline(settings, line);
+			cleanupUrlTime = atoi(line.c_str());
+			if(DigitalGraffiti::DEBUG)
+			{
+				printf("useKinect = %s\nuseWall = %s\npaintTime = %u\ncleanupStartTime = %u\ncleanupUrlTime = %u\n", (useKinect ? "true" : "false"), (useWall ? "true" : "false"), paintTime, cleanupStartTime, cleanupUrlTime);
+			}
+			success = true;
+		}
+	}
+	settings.close();
+	if(!success)
+	{
+		fprintf(stderr, "Could not find debug settings file: %s\n", DEBUG_SETTINGS_FILE);
+		exit(-1);
+	}
 
 	/////////
 	// KINECT
 	/////////
 	Kinect *obj;
-	if(USE_KINECT) 
+	if(useKinect) 
 	{
 		if(DEBUG)
 		{
@@ -97,7 +146,7 @@ DigitalGraffiti::DigitalGraffiti(int argc, char** argv)
 	printf("create wall start\n");
 	Wall wall(obj->getWidth(), obj->getHeight(), argc, argv);
 	printf("create wall start end\n");
-	if(USE_WALL) 
+	if(useWall) 
 	{
 		thread_args v;
 		v.e = &wall;
@@ -109,11 +158,11 @@ DigitalGraffiti::DigitalGraffiti(int argc, char** argv)
 	}
 
 	int mode = MODE_PAINT;
-	if(USE_WALL)
+	if(useWall)
 	{
 		wall.setMode(mode);
 	}
-	endT = time(NULL) + PAINT_TIME;
+	endT = time(NULL) + paintTime;
 	while(1)
 	{
 		switch(mode) 
@@ -122,7 +171,7 @@ DigitalGraffiti::DigitalGraffiti(int argc, char** argv)
 			break;
 		case(MODE_PAINT):
 			// Poll the Kinect
-			if(USE_KINECT) 
+			if(useKinect) 
 			{
 				color = -1;
 				played = false;
@@ -134,9 +183,9 @@ DigitalGraffiti::DigitalGraffiti(int argc, char** argv)
 					{
 						if(DEBUG) 
 						{	
-							cout << hits[ii] << "," << hits[ii + 1] << ": " << hits[ii + 2] << endl;
+							std::cout << hits[ii] << "," << hits[ii + 1] << ": " << hits[ii + 2] << std::endl;
 						}
-						if(USE_WALL) 
+						if(useWall) 
 						{
 							if(wall.addPaint(hits[ii], hits[ii + 1], hits[ii + 2]) && !played) 
 							{
@@ -169,14 +218,14 @@ DigitalGraffiti::DigitalGraffiti(int argc, char** argv)
 
 				// Switch to cleanup start mode
 				mode = MODE_CLEANUP_START;
-				if(USE_WALL) 
+				if(useWall) 
 				{
 					wall.setMode(mode);
 				}
 				// Start cleanup music
 				sound.playCleanupMusic();
 				// Calculate new endTime
-				endT = time(NULL) + CLEANUP_START_TIME;
+				endT = time(NULL) + cleanupStartTime;
 			}
 			break;
 		case(MODE_CLEANUP_START):
@@ -188,12 +237,12 @@ DigitalGraffiti::DigitalGraffiti(int argc, char** argv)
 					printf("Switch to cleanup url mode\n");
 				}
 				mode = MODE_CLEANUP_URL;
-				if(USE_WALL) 
+				if(useWall) 
 				{
 					wall.setMode(mode);
 				}
 				// Calculate new endTime
-				endT = time(NULL) + CLEANUP_URL_TIME;
+				endT = time(NULL) + cleanupUrlTime;
 			}
 			break;
 		case(MODE_CLEANUP_URL):
@@ -205,14 +254,14 @@ DigitalGraffiti::DigitalGraffiti(int argc, char** argv)
 					printf("Switch to paint mode\n");
 				}
 				mode = MODE_PAINT;
-				if(USE_WALL) 
+				if(useWall) 
 				{
 					wall.setMode(mode);
 				}
 				// Play splat sound
 				sound.playSplatSound();
 				// Calculate new endTime
-				endT = time(NULL) + PAINT_TIME;
+				endT = time(NULL) + paintTime;
 			}
 			break;
 		}
@@ -238,7 +287,10 @@ void DigitalGraffiti::listDirectory(std::string absolutePath)
 
 	printf("Path is %s\n", absolutePath);
 	hFind = FindFirstFile(absolutePath.c_str(), &FindFileData);
-	isFile = DigitalGraffiti::isFile(FindFileData.cFileName);
+	std::stringstream absoluteFilename;
+	absoluteFilename << absolutePath.substr(0, absolutePath.size() - 1);
+	absoluteFilename << FindFileData.cFileName;
+	isFile = DigitalGraffiti::isFile(absoluteFilename.str());
 	if (hFind == INVALID_HANDLE_VALUE) 
 	{
 		fprintf (stderr, "FindFirstFile failed (%d)\n", GetLastError());
@@ -252,7 +304,10 @@ void DigitalGraffiti::listDirectory(std::string absolutePath)
 		{
 			printf("The next item found is %s;\tIs file? %s\n", FindFileData.cFileName, isFile ? "true":"false");
 			success = FindNextFile(hFind, &FindFileData);
-			isFile = DigitalGraffiti::isFile(FindFileData.cFileName);
+			absoluteFilename.str(std::string());
+			absoluteFilename << absolutePath.substr(0, absolutePath.size() - 1);
+			absoluteFilename << FindFileData.cFileName;
+			isFile = DigitalGraffiti::isFile(absoluteFilename.str());
 		}
 		FindClose(hFind);
 	}
@@ -266,7 +321,10 @@ void DigitalGraffiti::getFileList(std::string absolutePath, std::vector<std::str
 	WIN32_FIND_DATA FindFileData;
 
 	hFind = FindFirstFile(absolutePath.c_str(), &FindFileData);
-	isFile = DigitalGraffiti::isFile(FindFileData.cFileName);
+	std::stringstream absoluteFilename;
+	absoluteFilename << absolutePath.substr(0, absolutePath.size() - 1);
+	absoluteFilename << FindFileData.cFileName;
+	isFile = DigitalGraffiti::isFile(absoluteFilename.str());
 	if (hFind == INVALID_HANDLE_VALUE) 
 	{
 		fprintf (stderr, "FindFirstFile failed (%d)\n", GetLastError());
@@ -275,25 +333,28 @@ void DigitalGraffiti::getFileList(std::string absolutePath, std::vector<std::str
 	else 
 	{
 		if(isFile) {
-			returnList.push_back(FindFileData.cFileName);
+			returnList.push_back(absoluteFilename.str());
 		}
 		success = FindNextFile(hFind, &FindFileData);
 		while(success != 0)
 		{
+			absoluteFilename.str(std::string());
+			absoluteFilename << absolutePath.substr(0, absolutePath.size() - 1);
+			absoluteFilename << FindFileData.cFileName;
+			isFile = DigitalGraffiti::isFile(absoluteFilename.str());
 			if(isFile) {
-				returnList.push_back(FindFileData.cFileName);
+				returnList.push_back(absoluteFilename.str());
 			}
 			success = FindNextFile(hFind, &FindFileData);
-			isFile = DigitalGraffiti::isFile(FindFileData.cFileName);
 		}
 		FindClose(hFind);
 	}
 }
 
-bool DigitalGraffiti::isFile(char *name)
+bool DigitalGraffiti::isFile(std::string absoluteFilename)
 {
 	struct stat st;
-	int ret = stat(name, &st);
+	int ret = stat(absoluteFilename.c_str(), &st);
 	if(ret != 0 || S_ISDIR(st.st_mode))
 	{
 		return false;

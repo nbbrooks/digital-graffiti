@@ -59,8 +59,9 @@ private:
 	static GLuint makeShader(GLenum, const char *);
 	static GLuint makeTextureWall();
 	static void mouseButton(int, int, int, int);
-	static void printStringBitmap(string, int, float);
-	static void printStringStroke(string, int, float, float);
+	static void printStringBitmap(std::string, int, float);
+	static void printStringStroke(std::string, int, float, float);
+	static void testStroke(int, float, float);
 	static void render(void);
 	static void resetAssets();
 	static void setRybToRgb(int, int, float, float, float);

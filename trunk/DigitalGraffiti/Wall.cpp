@@ -1,7 +1,8 @@
-#include <stdlib.h>
+﻿#include <stdlib.h>
 #include "stdafx.h"
 #include <iostream>
 #include <ctime>
+#include <FTGL/ftgl.h>
 #include <math.h>
 #include <stdio.h>
 #include <time.h>
@@ -560,7 +561,7 @@ void Wall::mouseButton(int button, int state, int x, int y)
 */
 void Wall::render(void) 
 {
-	stringstream ss1;
+	stringstream ss;
 
 	switch(mode) 
 	{
@@ -611,7 +612,8 @@ void Wall::render(void)
 		glClear(GL_COLOR_BUFFER_BIT);	
 		// Render bitmap message
 		glColor3f(0.0, 0.0, 0.0);
-		printStringStroke("How fast can you pick up the balls?", TEXT_CENTER, 0.3, 0.0005);
+		//printStringStroke("How fast can you pick up the balls?", TEXT_CENTER, 0.3, 0.0005);
+		testStroke(TEXT_CENTER, 0.3, 0.0005);
 		glutSwapBuffers();
 		break;
 	case(DigitalGraffiti::MODE_CLEANUP_URL):	
@@ -624,20 +626,16 @@ void Wall::render(void)
 		glColor3f(0.0, 0.0, 0.0);
 		printStringStroke("How fast can you pick up the balls?", TEXT_CENTER, 0.3, 0.0005);
 		// Monkey code
-		ss1 << ((modeStart + DigitalGraffiti::CLEANUP_URL_TIME) - time(NULL));
+		ss << ((modeStart + DigitalGraffiti::cleanupUrlTime) - time(NULL));
 		string timerString1 = "The game will restart in ";
 		string timerString2 = " seconds!";
-		string timerString = timerString1 + ss1.str() + timerString2;
+		string timerString = timerString1 + ss.str() + timerString2;
 		printStringStroke(timerString, TEXT_CENTER, 0.15, 0.0005);
 		// Render url image sequence
 		printStringStroke("Your image code is", TEXT_CENTER, 0.9, 0.0005);
 		printStringStroke(imageCode, TEXT_CENTER, 0.75, 0.0005);
-		/*
-		printStringStroke("Your image code is", TEXT_CENTER, 0.9, 0.0005);
-		printStringStroke(imageCode, TEXT_CENTER, 0.75, 0.0005);
 		printStringStroke("Download your image at sites.google.com/site/pitdigitalgraffiti", TEXT_CENTER, 0.6, 0.00035);
 		printStringStroke("Take a business card on the desk and write your code down!", TEXT_CENTER, 0.45, 0.00035);
-		*/
 		glutSwapBuffers();
 		break;
 	}
@@ -710,6 +708,58 @@ void Wall::printStringStroke(string text, int xFormat, float y, float scale)
 	glDisable(GL_BLEND);
 	glDisable(GL_LINE_SMOOTH);
 	glPopMatrix();
+}
+
+void Wall::testStroke(int xFormat, float y, float scale) 
+{
+	// Create a pixmap font from a TrueType file.
+FTGLPixmapFont font("/home/user/Arial.ttf");
+
+// If something went wrong, bail out.
+if(font.Error())
+    return -1;
+
+// Set the font size and render a small text.
+font.FaceSize(72);
+font.Render("Hello World!");
+
+	/*
+	glPushMatrix();
+	float textPixels = (float) text.length() * 104.76 * 450 * scale;
+	float width = (float) wallWidth;
+	switch(xFormat)
+	{
+	case(TEXT_LEFT):
+		glTranslatef(-1.0, y, 0.0);
+		break;
+	case(TEXT_CENTER):
+		glTranslatef(-textPixels / width / 2, y, 0.0);
+		break;
+	case(TEXT_RIGHT):
+		glTranslatef((wallWidth - textPixels) / wallWidth - 0.5, y, 0.0);
+		break;
+	default:
+		break;
+	}
+	glScalef(scale, scale, scale);
+
+	// Antialias on
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
+	glEnable(GL_LINE_SMOOTH);
+	glLineWidth(2.0);   // 2.0 gives good results.
+
+	for (string::iterator i = text.begin(); i != text.end(); ++i) 
+	{
+		char c = *i;
+		glutStrokeCharacter(GLUT_STROKE_ROMAN, c);
+	}
+
+	// Antialias off
+	glDisable(GL_BLEND);
+	glDisable(GL_LINE_SMOOTH);
+	glPopMatrix();
+	*/
 }
 
 /*

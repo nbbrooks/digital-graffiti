@@ -56,15 +56,15 @@
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>C:/Program Files (x86)/OpenNI/Include;C:/Program Files (x86)/OpenNI/Samples/NiUserTracker;C:\OpenCV2.2\include\opencv;E:\Code\se-project\eigen;C:\OpenCV2.2\include;C:\OpenCV2.2\include\opencv;C:\OpenCV2.2\lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:/Program Files (x86)/OpenNI/Include;C:/Program Files (x86)/OpenNI/Samples/NiUserTracker;C:\OpenCV2.2\include\opencv;C:\OpenCV2.2\include;C:\OpenCV2.2\lib;C:\work;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OpenMPSupport>false</OpenMPSupport>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>C:/Program Files (x86)/OpenNI/Lib/$(Configuration);C:/Program Files (x86)/OpenNI/Lib/;C:/Program Files (x86)/OpenNI/Samples/NiUserTracker/Libs;C:\OpenCV2.2\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opencv_core220.lib;opencv_highgui220.lib;opencv_ffmpeg220.lib;opencv_core220d.lib;opencv_highgui220d.lib;opencv_ffmpeg220d.lib;winmm.lib;CLNUIDevice.lib;opencv_objdetect220.lib;opencv_objdetect220d.lib;opencv_imgproc220.lib;opencv_imgproc220d.lib;openNI.lib;glut32.lib;</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:/work;C:/Program Files (x86)/OpenNI/Lib/$(Configuration);C:/Program Files (x86)/OpenNI/Lib/;C:/Program Files (x86)/OpenNI/Samples/NiUserTracker/Libs;C:\OpenCV2.2\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>ftgl.lib;opencv_core220.lib;opencv_highgui220.lib;opencv_ffmpeg220.lib;opencv_core220d.lib;opencv_highgui220d.lib;opencv_ffmpeg220d.lib;winmm.lib;CLNUIDevice.lib;opencv_objdetect220.lib;opencv_objdetect220d.lib;opencv_imgproc220.lib;opencv_imgproc220d.lib;openNI.lib;glut32.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

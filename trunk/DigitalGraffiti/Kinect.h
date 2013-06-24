@@ -12,8 +12,8 @@ public:
 	void pollFrames(int select);
 	void initialize(bool preload);
 	bool detectSingle(int *xx, int *yy, int *color);
-	bool detectMulti(vector<int> *hits);
-	bool detectMultiFeedback(vector<int> *feedbackOld, vector<int> *hits, vector<int> *feedbackNew);
+	bool detectMulti(std::vector<int> *hits);
+	bool detectMultiFeedback(std::vector<int> *feedbackOld, std::vector<int> *hits, std::vector<int> *feedbackNew);
 
 	static const int WIDTH = 640;
 	static const int HEIGHT = 480;
@@ -30,9 +30,7 @@ public:
 	static const int FEEDBACK_DIST_THRESH = 200;
 	static const int BUFFER_LENGTH = 8;
 	static const int BALL_BOX = 4;
-	static const char* SAMPLE_XML_PATH;
 	static const float KINECT_WAIT;
-	static const std::string CONFIG_FILE;
 
 private:
 	int minVal, maxVal;
@@ -43,6 +41,7 @@ private:
 	CvPoint tl, br;
 	CvRect roi;
 	IplImage *colorFrame, *depthFrame;
+	static const std::string CONFIG_FILE, KINECT_SETTINGS_FILE;
 	xn::Context g_context;
 	xn::DepthGenerator g_depth;
 	xn::ImageGenerator g_image;

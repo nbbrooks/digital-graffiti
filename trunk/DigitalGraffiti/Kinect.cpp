@@ -4,18 +4,38 @@
 * Interfaces with Microsoft Kinect to detect locations and colors of plastic ball collisions in specified collision region
 * @author Andrew Sarratori, Nathan Brooks
 */
-const char* Kinect::SAMPLE_XML_PATH = "C:/Program Files (x86)/OpenNI/Data/SamplesConfig.xml";
 const float Kinect::KINECT_WAIT = 2.0f;
 const std::string Kinect::CONFIG_FILE = "config.txt";
+const std::string Kinect::KINECT_SETTINGS_FILE = "kinect-settings.txt";
 
 Kinect::Kinect()
 {
+	std::string xmlConfig;
 	time_t delayStartTime;
 	time_t delayEndTime;
 
 	// Set up OpenNI stuff
+	bool success = false;
+	std::ifstream settings;
+	settings.open(KINECT_SETTINGS_FILE);
+	if(settings.is_open() && settings.good())
+	{
+		getline(settings, xmlConfig);
+		if(DigitalGraffiti::DEBUG)
+		{
+			printf("XML configuration file is: %s\n", xmlConfig.c_str());
+		}
+		success = true;
+	}
+	settings.close();
+	if(!success)
+	{
+
+		fprintf(stderr, "Could not find Kinect settings file: %s\n", KINECT_SETTINGS_FILE);
+		exit(-1);
+	}
 	xn::EnumerationErrors errors;
-	rc = g_context.InitFromXmlFile(SAMPLE_XML_PATH, &errors);
+	rc = g_context.InitFromXmlFile(xmlConfig.c_str(), &errors);
 	if (rc == XN_STATUS_NO_NODE_PRESENT)
 	{
 		XnChar strError[1024];
@@ -347,23 +367,23 @@ void Kinect::initialize(bool createConfig)
 		this->roi.height = this->br.y - this->tl.y + 1;
 
 		// Write values to config file
-		ofstream conf;
+		std::ofstream conf;
 		conf.open (CONFIG_FILE, conf.trunc);
-		conf << this->maxVal << endl;
-		conf << this->minVal << endl;
-		conf << this->avg_Red[0] << endl;
-		conf << this->avg_Red[1] << endl;
-		conf << this->avg_Red[2] << endl;
-		conf << this->avg_Yellow[0] << endl;
-		conf << this->avg_Yellow[1] << endl;
-		conf << this->avg_Yellow[2] << endl;
-		conf << this->avg_Blue[0] << endl;
-		conf << this->avg_Blue[1] << endl;
-		conf << this->avg_Blue[2] << endl;
-		conf << this->tl.x << endl;
-		conf << this->tl.y << endl;
-		conf << this->br.x << endl;
-		conf << this->br.y << endl;
+		conf << this->maxVal << std::endl;
+		conf << this->minVal << std::endl;
+		conf << this->avg_Red[0] << std::endl;
+		conf << this->avg_Red[1] << std::endl;
+		conf << this->avg_Red[2] << std::endl;
+		conf << this->avg_Yellow[0] << std::endl;
+		conf << this->avg_Yellow[1] << std::endl;
+		conf << this->avg_Yellow[2] << std::endl;
+		conf << this->avg_Blue[0] << std::endl;
+		conf << this->avg_Blue[1] << std::endl;
+		conf << this->avg_Blue[2] << std::endl;
+		conf << this->tl.x << std::endl;
+		conf << this->tl.y << std::endl;
+		conf << this->br.x << std::endl;
+		conf << this->br.y << std::endl;
 		conf.close();
 
 		// Release mouse callback and destroy window
@@ -376,7 +396,7 @@ void Kinect::initialize(bool createConfig)
 		char buffer[BUFFER_LENGTH];
 		int ii = 0;
 
-		ifstream conf;
+		std::ifstream conf;
 		conf.open(CONFIG_FILE);
 
 		// Read depth camera reference values
@@ -427,14 +447,14 @@ void Kinect::initialize(bool createConfig)
 		conf.close();
 	}
 
-	cout << "----------" << endl;
-	cout << "Background: " << this->maxVal << endl;
-	cout << "Foreground: " << this->minVal << endl;
-	cout << "Avg Red: " << this->avg_Red[0] << "," << this->avg_Red[1] << "," << this->avg_Red[2] << endl;
-	cout << "Avg Yellow: " << this->avg_Yellow[0] << "," << this->avg_Yellow[1] << "," << this->avg_Yellow[2] << endl;
-	cout << "Avg Blue: " << this->avg_Blue[0] << "," << this->avg_Blue[1] << "," << this->avg_Blue[2] << endl;
-	cout << "Bounding Box: " << this->tl.x << "," << this->tl.y << " || " << this->br.x << "," << this->br.y << endl;
-	cout << "----------" << endl;
+	std::cout << "----------" << std::endl;
+	std::cout << "Background: " << this->maxVal << std::endl;
+	std::cout << "Foreground: " << this->minVal << std::endl;
+	std::cout << "Avg Red: " << this->avg_Red[0] << "," << this->avg_Red[1] << "," << this->avg_Red[2] << std::endl;
+	std::cout << "Avg Yellow: " << this->avg_Yellow[0] << "," << this->avg_Yellow[1] << "," << this->avg_Yellow[2] << std::endl;
+	std::cout << "Avg Blue: " << this->avg_Blue[0] << "," << this->avg_Blue[1] << "," << this->avg_Blue[2] << std::endl;
+	std::cout << "Bounding Box: " << this->tl.x << "," << this->tl.y << " || " << this->br.x << "," << this->br.y << std::endl;
+	std::cout << "----------" << std::endl;
 }
 
 bool Kinect::detectSingle(int *xx, int *yy, int *color)
@@ -498,7 +518,7 @@ bool Kinect::detectSingle(int *xx, int *yy, int *color)
 		return result;
 }
 
-bool Kinect::detectMulti(vector<int> *hits)
+bool Kinect::detectMulti(std::vector<int> *hits)
 {
 	bool result = false, valid_hit = false, valid_color = false;
 	int ii = 0, jj = 0;
@@ -589,7 +609,7 @@ bool Kinect::detectMulti(vector<int> *hits)
 	return result;
 }
 
-bool Kinect::detectMultiFeedback(vector<int> *feedbackOld, vector<int> *hits, vector<int> *feedbackNew)
+bool Kinect::detectMultiFeedback(std::vector<int> *feedbackOld, std::vector<int> *hits, std::vector<int> *feedbackNew)
 {
 	bool result = false;
 	bool valid_hit = false;
@@ -639,7 +659,7 @@ bool Kinect::detectMultiFeedback(vector<int> *feedbackOld, vector<int> *hits, ve
 					}
 				}
 			}
-			if(DigitalGraffiti::DEBUG)
+			if(DigitalGraffiti::COLLISION_DEBUG)
 			{
 				if(valid_hit) {
 					cvRectangle(this->depthFrame, cvPoint(rect.x - 2, rect.y - 2), cvPoint(rect.x + rect.width + 2, rect.y + rect.height + 2), cvScalar(0, 0, 0));
@@ -651,7 +671,7 @@ bool Kinect::detectMultiFeedback(vector<int> *feedbackOld, vector<int> *hits, ve
 		// Do we have a collision?
 		if(valid_hit)
 		{
-			if(DigitalGraffiti::DEBUG)
+			if(DigitalGraffiti::COLLISION_DEBUG)
 			{
 				cvShowImage("Depth", this->depthFrame);
 				cvMoveWindow("Depth", 0, 0);

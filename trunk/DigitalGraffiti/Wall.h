@@ -61,7 +61,6 @@ private:
 	static void mouseButton(int, int, int, int);
 	static void printStringBitmap(std::string, int, float);
 	static void printStringStroke(std::string, int, float, float);
-	static void testStroke(int, float, float);
 	static void render(void);
 	static void resetAssets();
 	static void setRybToRgb(int, int, float, float, float);

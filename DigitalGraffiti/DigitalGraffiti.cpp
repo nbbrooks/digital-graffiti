@@ -36,7 +36,7 @@ time_t endT			= 0;
 const std::string DigitalGraffiti::DEBUG_SETTINGS_FILE = "graffiti-settings.txt";
 bool DigitalGraffiti::useKinect = true;
 bool DigitalGraffiti::useWall = true;
-int DigitalGraffiti::paintTime, DigitalGraffiti::cleanupStartTime, DigitalGraffiti::cleanupUrlTime;
+int DigitalGraffiti::instructionsTime, DigitalGraffiti::paintTime, DigitalGraffiti::cleanupStartTime, DigitalGraffiti::cleanupUrlTime;
 
 /**
 * Structure for passing a thread an object pointer and function pointer
@@ -91,11 +91,16 @@ DigitalGraffiti::DigitalGraffiti(int argc, char** argv)
 		{
 			getline(settings, line);
 			cleanupUrlTime = atoi(line.c_str());
-			if(DigitalGraffiti::DEBUG)
-			{
-				printf("useKinect = %s\nuseWall = %s\npaintTime = %u\ncleanupStartTime = %u\ncleanupUrlTime = %u\n", (useKinect ? "true" : "false"), (useWall ? "true" : "false"), paintTime, cleanupStartTime, cleanupUrlTime);
-			}
 			success = true;
+		}
+		if(settings.good())
+		{
+			getline(settings, line);
+			instructionsTime = atoi(line.c_str());
+		}
+		if(DigitalGraffiti::DEBUG)
+		{
+			printf("useKinect = %s\nuseWall = %s\npaintTime = %u\ncleanupStartTime = %u\ncleanupUrlTime = %u\ninstructionsTime = %u\n", (useKinect ? "true" : "false"), (useWall ? "true" : "false"), paintTime, cleanupStartTime, cleanupUrlTime, instructionsTime);
 		}
 	}
 	settings.close();
@@ -157,17 +162,55 @@ DigitalGraffiti::DigitalGraffiti(int argc, char** argv)
 		Sleep(2000);
 	}
 
-	int mode = MODE_PAINT;
+
+	int mode;
+	if(instructionsTime != 0) 
+	{
+		if(DEBUG)
+		{
+			printf("Start in instruction mode\n");
+		}
+		mode = MODE_INSTRUCTIONS;
+		endT = time(NULL) + instructionsTime;
+		sound.playInstructionsMusic();
+	}
+	else
+	{
+		if(DEBUG)
+		{
+			printf("Start in paint mode\n");
+		}
+		mode = MODE_PAINT;
+		endT = time(NULL) + paintTime;
+		sound.playSplatSound();
+	}
 	if(useWall)
 	{
 		wall.setMode(mode);
 	}
-	endT = time(NULL) + paintTime;
 	while(1)
 	{
 		switch(mode) 
 		{
 		case(MODE_CALIBRATE):
+			break;
+		case(MODE_INSTRUCTIONS):
+			// Display instructions.tga
+			if(difftime(endT, time(NULL)) <= 0.0) 
+			{
+				// Switch to cleanup url mode
+				if(DEBUG)
+				{
+					printf("Switch to paint mode\n");
+				}
+				mode = MODE_PAINT;
+				endT = time(NULL) + paintTime;
+				sound.playSplatSound();
+				if(useWall) 
+				{
+					wall.setMode(mode);
+				}
+			}
 			break;
 		case(MODE_PAINT):
 			// Poll the Kinect
@@ -248,20 +291,30 @@ DigitalGraffiti::DigitalGraffiti(int argc, char** argv)
 		case(MODE_CLEANUP_URL):
 			if(difftime(endT, time(NULL)) <= 0.0) 
 			{
-				// Switch to calibration mode
-				if(DEBUG)
+				if(instructionsTime == 0)
 				{
-					printf("Switch to paint mode\n");
+					if(DEBUG)
+					{
+						printf("Switch to paint mode\n");
+					}
+					mode = MODE_PAINT;
+					endT = time(NULL) + paintTime;
+					sound.playSplatSound();
 				}
-				mode = MODE_PAINT;
+				else
+				{
+					if(DEBUG)
+					{
+						printf("Switch to instructions mode\n");
+					}
+					mode = MODE_INSTRUCTIONS;
+					endT = time(NULL) + instructionsTime;
+					sound.playInstructionsMusic();
+				}
 				if(useWall) 
 				{
 					wall.setMode(mode);
 				}
-				// Play splat sound
-				sound.playSplatSound();
-				// Calculate new endTime
-				endT = time(NULL) + paintTime;
 			}
 			break;
 		}

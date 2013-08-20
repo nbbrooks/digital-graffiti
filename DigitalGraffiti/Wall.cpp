@@ -6,6 +6,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <time.h>
+#include "util.c"
 #ifdef _WIN32
 #  include <windows.h>
 #endif
@@ -84,19 +85,19 @@ static const GLushort g_element_buffer_data[] = { 0, 1, 2, 3 };
 static struct 
 {
 	// Integer locations that we'll need to reference our shaders' uniform and attribute variables
-	GLuint vertex_buffer, element_buffer;
-	GLuint textures[1];
-	GLuint vertex_shader, fragment_shader, program;
+	GLuint vertex_buffer[2], element_buffer[2];
+	GLuint textures[2];
+	GLuint vertex_shader[2], fragment_shader[2], program[2];
 
 	struct 
 	{
 		GLint fade_factor;
-		GLint textures[1];
+		GLint textures[2];
 	} uniforms;
 
 	struct 
 	{
-		GLint position;
+		GLint position[2];
 	} attributes;
 
 	// Holds the floating-point value we'll assign to the fade_factor uniform every frame
@@ -414,45 +415,65 @@ GLuint Wall::makeProgram(GLuint vertex_shader, GLuint fragment_shader)
 */
 int Wall::makeResources(void) 
 {
-	g_resources.vertex_buffer = makeBuffer(
+	g_resources.vertex_buffer[0] = makeBuffer(
 		GL_ARRAY_BUFFER,
 		g_vertex_buffer_data,
 		sizeof(g_vertex_buffer_data)
 		);
-	g_resources.element_buffer = makeBuffer(
+	g_resources.vertex_buffer[1] = makeBuffer(
+		GL_ARRAY_BUFFER,
+		g_vertex_buffer_data,
+		sizeof(g_vertex_buffer_data)
+		);
+	g_resources.element_buffer[0] = makeBuffer(
+		GL_ELEMENT_ARRAY_BUFFER,
+		g_element_buffer_data,
+		sizeof(g_element_buffer_data)
+		);
+	g_resources.element_buffer[1] = makeBuffer(
 		GL_ELEMENT_ARRAY_BUFFER,
 		g_element_buffer_data,
 		sizeof(g_element_buffer_data)
 		);
 
 	g_resources.textures[0] = makeTextureWall();
+	g_resources.textures[1] = makeTexture("instructions.tga");
 
-	if (g_resources.textures[0] == 0)
+	if (g_resources.textures[0] == 0 || g_resources.textures[1] == 0)
 		return 0;
 
-	g_resources.vertex_shader = makeShader(
+	g_resources.vertex_shader[0] = makeShader(
 		GL_VERTEX_SHADER,
 		"wall.v.glsl"
 		);
-	if (g_resources.vertex_shader == 0)
+	g_resources.vertex_shader[1] = makeShader(
+		GL_VERTEX_SHADER,
+		"instructions.v.glsl"
+		);
+	if (g_resources.vertex_shader[0] == 0 || g_resources.vertex_shader[1] == 0)
 		return 0;
 
-	g_resources.fragment_shader = makeShader(
+	g_resources.fragment_shader[0] = makeShader(
 		GL_FRAGMENT_SHADER,
 		"wall.f.glsl"
 		);
-	if (g_resources.fragment_shader == 0)
+	g_resources.fragment_shader[1] = makeShader(
+		GL_FRAGMENT_SHADER,
+		"instructions.f.glsl"
+		);
+	if (g_resources.fragment_shader[0] == 0 || g_resources.fragment_shader[1] == 0)
 		return 0;
 
-	g_resources.program = makeProgram(g_resources.vertex_shader, g_resources.fragment_shader);
-	if (g_resources.program == 0)
+	g_resources.program[0] = makeProgram(g_resources.vertex_shader[0], g_resources.fragment_shader[0]);
+	g_resources.program[1] = makeProgram(g_resources.vertex_shader[1], g_resources.fragment_shader[1]);
+	if (g_resources.program[0] == 0 || g_resources.program[1] == 0)
 		return 0;
 
-	g_resources.uniforms.textures[0]
-	= glGetUniformLocation(g_resources.program, "textures[0]");
+	g_resources.uniforms.textures[0] = glGetUniformLocation(g_resources.program[0], "textures[0]");
+	g_resources.uniforms.textures[1] = glGetUniformLocation(g_resources.program[1], "textures[1]");
 
-	g_resources.attributes.position
-		= glGetAttribLocation(g_resources.program, "position");
+	g_resources.attributes.position[0] = glGetAttribLocation(g_resources.program[0], "position");
+	g_resources.attributes.position[1] = glGetAttribLocation(g_resources.program[1], "position");
 
 	return 1;
 }
@@ -498,11 +519,6 @@ GLuint Wall::makeShader(GLenum type, const char *filename)
 GLuint Wall::makeTextureWall() 
 {
 	GLuint texture;
-
-	if(mode != DigitalGraffiti::MODE_PAINT) 
-	{
-		return 0;
-	}
 	if (!wallImage) 
 	{
 		fprintf(stderr, "make_texture_wall failed!\n");
@@ -532,6 +548,32 @@ GLuint Wall::makeTextureWall()
 		delete[] wallImage;
 		throw;
 	}
+	return texture;
+}
+
+GLuint Wall::makeTexture(const char *filename)
+{
+	int width, height;
+	void *pixels = read_tga(filename, &width, &height);
+	GLuint texture;
+
+	if (!pixels)
+		return 0;
+
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,     GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,     GL_CLAMP_TO_EDGE);
+	glTexImage2D(
+		GL_TEXTURE_2D, 0,           /* target, level */
+		GL_RGB8,                    /* internal format */
+		width, height, 0,           /* width, height, border */
+		GL_BGR, GL_UNSIGNED_BYTE,   /* external format, type */
+		pixels                      /* pixels */
+		);
+	free(pixels);
 	return texture;
 }
 
@@ -576,32 +618,68 @@ void Wall::render(void)
 		printStringStroke("CALIBRATION MODE", TEXT_CENTER, 0.0, 0.0005);
 		glutSwapBuffers();
 		break;
+	case(DigitalGraffiti::MODE_INSTRUCTIONS):
+
+		glUseProgram(g_resources.program[1]);
+
+		glUniform1f(g_resources.uniforms.fade_factor, g_resources.fade_factor);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, g_resources.textures[1]);
+		glUniform1i(g_resources.uniforms.textures[1], 1);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, g_resources.textures[1]);
+		glUniform1i(g_resources.uniforms.textures[1], 1);
+
+		glBindBuffer(GL_ARRAY_BUFFER, g_resources.vertex_buffer[1]);
+		glVertexAttribPointer(
+			g_resources.attributes.position[1],  /* attribute */
+			2,                                /* size */
+			GL_FLOAT,                         /* type */
+			GL_FALSE,                         /* normalized? */
+			sizeof(GLfloat)*2,                /* stride */
+			(void*)0                          /* array buffer offset */
+			);
+		glEnableVertexAttribArray(g_resources.attributes.position[1]);
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_resources.element_buffer[1]);
+		glDrawElements(
+			GL_TRIANGLE_STRIP,  /* mode */
+			4,                  /* count */
+			GL_UNSIGNED_SHORT,  /* type */
+			(void*)0            /* element array buffer offset */
+			);
+
+		glDisableVertexAttribArray(g_resources.attributes.position[1]);
+		glutSwapBuffers();
+		break;
 	case(DigitalGraffiti::MODE_PAINT):
-		// Disable paint shaders
-		glUseProgram(g_resources.program);
+		// Enable paint shaders
+		glUseProgram(g_resources.program[0]);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, g_resources.textures[0]);
 		glUniform1i(g_resources.uniforms.textures[0], 0);
 
-		glBindBuffer(GL_ARRAY_BUFFER, g_resources.vertex_buffer);
+		glBindBuffer(GL_ARRAY_BUFFER, g_resources.vertex_buffer[0]);
 		glVertexAttribPointer(
-			g_resources.attributes.position,  // attribute
+			g_resources.attributes.position[0],  // attribute
 			2,                                // size
 			GL_FLOAT,                         // type
 			GL_FALSE,                         // normalized?
 			sizeof(GLfloat)*2,                // stride
 			(void*)0                          // array buffer offset
 			);
-		glEnableVertexAttribArray(g_resources.attributes.position);
+		glEnableVertexAttribArray(g_resources.attributes.position[0]);
 
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_resources.element_buffer);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_resources.element_buffer[0]);
 		glDrawElements(
 			GL_TRIANGLE_STRIP,  // mode
 			4,                  // count
 			GL_UNSIGNED_SHORT,  // type
 			(void*)0            // element array buffer offset
 			);
-		glDisableVertexAttribArray(g_resources.attributes.position);
+		glDisableVertexAttribArray(g_resources.attributes.position[0]);
 		glutSwapBuffers();
 		break;
 	case(DigitalGraffiti::MODE_CLEANUP_START):	
@@ -751,6 +829,8 @@ void Wall::setMode(int inMode)
 	modeStart = time(NULL);
 	switch(mode) 
 	{
+	case(DigitalGraffiti::MODE_INSTRUCTIONS):
+		break;
 	case(DigitalGraffiti::MODE_PAINT):
 		// Reset wall and random generator
 		resetAssets();
@@ -839,14 +919,31 @@ void Wall::updateIdle(int value)
 {
 	const int desiredFPS = 60;
 	glutTimerFunc(1000 / desiredFPS, updateIdle, ++value);
+	switch(mode)
+	{
+	case DigitalGraffiti::MODE_INSTRUCTIONS:
+		updateTextureWall(g_resources.textures[1]);
+		glutPostRedisplay();
+		break;
+	case DigitalGraffiti::MODE_PAINT:
+		updateWallImage(0);
+		updateTextureWall(g_resources.textures[0]);
+		glutPostRedisplay();
+		break;
+	default:
+		glutPostRedisplay();
+		break;
+	}
+	/*
 	if(mode != DigitalGraffiti::MODE_PAINT)
 	{
-		glutPostRedisplay();
-		return;
+	glutPostRedisplay();
+	return;
 	}
 	updateWallImage(0);
 	updateTextureWall(g_resources.textures[0]);
 	glutPostRedisplay();
+	*/
 }
 
 /**

@@ -10,10 +10,10 @@ public:
 	const static bool DEBUG = true;
 	const static bool COLLISION_DEBUG = false;
 	const static bool FULL_SCREEN = true, USE_GRAVITY = true;
-	static int paintTime, cleanupStartTime, cleanupUrlTime;
+	static int instructionsTime, paintTime, cleanupStartTime, cleanupUrlTime;
 	// Constants
 	const static int RED_BALL = 0, YELLOW_BALL = 1, BLUE_BALL = 2, NUM_BALL_COLORS = 3;
-	const static int MODE_PAINT = 0, MODE_CLEANUP_START = 1, MODE_CLEANUP_URL = 2, MODE_CALIBRATE = 3;
+	const static int MODE_PAINT = 0, MODE_CLEANUP_START = 1, MODE_CLEANUP_URL = 2, MODE_CALIBRATE = 3, MODE_INSTRUCTIONS = 4;
 
 	DigitalGraffiti(int, char **);
 

@@ -6,17 +6,34 @@ Sound::Sound(void)
 {
 	// Find music and sound files
 	std::string exeDir = DigitalGraffiti::getExeDirectory();
+	DigitalGraffiti::getFileList(exeDir + "\\sound\\instructions\\*", instructionsMusicList);
 	DigitalGraffiti::getFileList(exeDir + "\\sound\\cleanup\\*", cleanupMusicList);
 	DigitalGraffiti::getFileList(exeDir + "\\sound\\splat\\*", splatSoundList);
+	instructionsCounter = 0;
 	cleanupCounter = 0;
 	splatCounter = 0;
+	numInstructions= instructionsMusicList.size();
 	numCleanup = cleanupMusicList.size();
 	numSplat = splatSoundList.size();
 	if(DigitalGraffiti::DEBUG)
 	{
 		printf("Sound directory is: %s\n", exeDir.c_str());
+		printf("\tnumInstructions = %u\n", numInstructions);
 		printf("\tnumCleanup = %u\n", numCleanup);
 		printf("\tnumSplat = %u\n", numSplat);
+	}
+}
+
+void Sound::playInstructionsMusic(void) 
+{
+	if(numInstructions > 0)
+	{
+		if(DigitalGraffiti::DEBUG)
+		{
+			printf("Play %s\n", instructionsMusicList[instructionsCounter].c_str());
+		}
+		PlaySound(TEXT(instructionsMusicList[instructionsCounter].c_str()), NULL, SND_FILENAME | SND_ASYNC| SND_NOWAIT);
+		instructionsCounter = (instructionsCounter + 1) % numInstructions;
 	}
 }
 

@@ -34,7 +34,7 @@ static short le_short(unsigned char *bytes)
     return bytes[0] | ((char)bytes[1] << 8);
 }
 
-void *read_tga(const char *filename, int *width, int *height)
+static void *read_tga(const char *filename, int *width, int *height)
 {
     struct tga_header {
        char  id_length;
